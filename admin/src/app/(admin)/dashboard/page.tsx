@@ -19,6 +19,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { getFirebaseDb } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { StatsCard } from '@/components/Sidebar';
 
 export default function DashboardPage() {
@@ -34,22 +35,48 @@ export default function DashboardPage() {
   >([]);
   const [loading, setLoading] = useState(true);
 
+  const { role, hasFullAccess } = useAuth();
+
   useEffect(() => {
+    if (role !== 'admin' || !hasFullAccess) {
+      setLoading(false);
+      return;
+    }
+
     const db = getFirebaseDb();
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      setStats((prev) => ({ ...prev, users: snap.size }));
-      setLoading(false);
-    });
+    const unsubUsers = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        setStats((prev) => ({ ...prev, users: snap.size }));
+        setLoading(false);
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('users listener error', err);
+        setLoading(false);
+      }
+    );
 
-    const unsubShops = onSnapshot(collection(db, 'shops'), (snap) => {
-      setStats((prev) => ({ ...prev, shops: snap.size }));
-    });
+    const unsubShops = onSnapshot(
+      collection(db, 'shops'),
+      (snap) => {
+        setStats((prev) => ({ ...prev, shops: snap.size }));
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('shops listener error', err);
+      }
+    );
 
     const unsubPending = onSnapshot(
       query(collection(db, 'shops'), where('approvalStatus', '==', 'pending')),
       (snap) => {
         setStats((prev) => ({ ...prev, pendingShops: snap.size }));
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('pending shops listener error', err);
       }
     );
 
@@ -57,6 +84,10 @@ export default function DashboardPage() {
       query(collection(db, 'queue_requests'), where('status', '==', 'pending')),
       (snap) => {
         setStats((prev) => ({ ...prev, activeQueues: snap.size }));
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('queues listener error', err);
       }
     );
 
@@ -78,6 +109,10 @@ export default function DashboardPage() {
           .map((hour) => ({ hour, count: hourlyCounts[hour] }));
 
         setChartData(sorted);
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('chart listener error', err);
       }
     );
 
@@ -88,7 +123,7 @@ export default function DashboardPage() {
       unsubQueues();
       unsubChart();
     };
-  }, []);
+  }, [role, hasFullAccess]);
 
   if (loading) {
     return (

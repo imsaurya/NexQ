@@ -2,7 +2,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { getFirebaseDb } from '../../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 type User = {
   id: string;
@@ -15,18 +16,31 @@ type User = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
 
+  const { role, hasFullAccess } = useAuth();
+
   useEffect(() => {
-    const unsub = onSnapshot(collection(getFirebaseDb(), 'users'), (snap) => {
-      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as User)));
-    });
+    if (role !== 'admin' || !hasFullAccess) return;
+    const unsub = onSnapshot(
+      collection(getFirebaseDb(), 'users'),
+      (snap) => setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as User))),
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.error('users listener error', err);
+      }
+    );
     return unsub;
-  }, []);
+  }, [role, hasFullAccess]);
 
   const updateUserRole = async (id: string, currentRole: string) => {
     const newRole = currentRole === 'customer' ? 'shop_owner' : 'customer';
-    await updateDoc(doc(getFirebaseDb(), 'users', id), {
-      role: newRole,
-    });
+    try {
+      await updateDoc(doc(getFirebaseDb(), 'users', id), {
+        role: newRole,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to update user role', err);
+    }
   };
 
   return (

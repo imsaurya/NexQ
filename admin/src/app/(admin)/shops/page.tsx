@@ -1,8 +1,9 @@
 
 'use client';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { getFirebaseDb } from '../../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 
 type Shop = {
   id: string; name: string; city: string; area: string;
@@ -20,21 +21,34 @@ export default function ShopsPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [filter, setFilter] = useState('all');
 
+  const { role, hasFullAccess } = useAuth();
+
   useEffect(() => {
+    if (role !== 'admin' || !hasFullAccess) return;
     // Real-time listener
     const unsub = onSnapshot(
       collection(getFirebaseDb(), 'shops'),
-      (snap) => setShops(snap.docs.map(d => ({ id: d.id, ...d.data() } as Shop)))
+      (snap) => setShops(snap.docs.map(d => ({ id: d.id, ...d.data() } as Shop))),
+      (err) => {
+        // Firestore rules may block reads in dev — log and continue
+        // eslint-disable-next-line no-console
+        console.error('shops listener error', err);
+      }
     );
     return unsub;
-  }, []);
+  }, [role, hasFullAccess]);
 
   const updateStatus = async (id: string, approvalStatus: string) => {
-    await updateDoc(doc(getFirebaseDb(), 'shops', id), {
-      approvalStatus,
-      isActive: approvalStatus === 'approved',
-      updatedAt: Timestamp.now(),
-    });
+    try {
+      await updateDoc(doc(getFirebaseDb(), 'shops', id), {
+        approvalStatus,
+        isActive: approvalStatus === 'approved',
+        updatedAt: Timestamp.now(),
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to update shop status', err);
+    }
   };
 
   const filtered = filter === 'all' ? shops : shops.filter(s => s.approvalStatus === filter);

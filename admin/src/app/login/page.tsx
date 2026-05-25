@@ -31,6 +31,8 @@ export default function LoginPage() {
       console.log("CALLING LOGIN..."); // ← debug line
       await login(email, password);
       console.log("LOGIN SUCCESS"); // ← debug line
+      // in case auth state change doesn't immediately redirect, stop the submitting state
+      setIsSubmitting(false);
     } catch (err: any) {
       console.log("LOGIN ERROR:", err.message); // ← debug line
       setError(err.message);

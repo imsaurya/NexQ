@@ -36,6 +36,8 @@ class _ShopRegistrationScreenState extends ConsumerState<ShopRegistrationScreen>
   final _serviceNameController = TextEditingController();
   final _serviceDurationController = TextEditingController(text: '15');
   final _servicePriceController = TextEditingController(text: '0');
+  final _imageUrlController = TextEditingController();
+  final List<String> _imageUrls = [];
 
   @override
   void dispose() {
@@ -46,6 +48,7 @@ class _ShopRegistrationScreenState extends ConsumerState<ShopRegistrationScreen>
     _serviceNameController.dispose();
     _serviceDurationController.dispose();
     _servicePriceController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -59,6 +62,15 @@ class _ShopRegistrationScreenState extends ConsumerState<ShopRegistrationScreen>
         price: double.tryParse(_servicePriceController.text) ?? 0,
       ));
       _serviceNameController.clear();
+    });
+  }
+
+  void _addImageUrl() {
+    final v = _imageUrlController.text.trim();
+    if (v.isEmpty) return;
+    setState(() {
+      _imageUrls.add(v);
+      _imageUrlController.clear();
     });
   }
 
@@ -90,6 +102,7 @@ class _ShopRegistrationScreenState extends ConsumerState<ShopRegistrationScreen>
               workingDays: const [1, 2, 3, 4, 5, 6],
             ),
             services: _services,
+        imageUrls: _imageUrls,
           );
       ref.invalidate(ownerShopsProvider);
       if (mounted) {
@@ -221,6 +234,59 @@ class _ShopRegistrationScreenState extends ConsumerState<ShopRegistrationScreen>
                 trailing: Text('₹${s.price.toStringAsFixed(0)}'),
               ),
             ),
+            const SizedBox(height: 24),
+            Text('Shop Images', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _imageUrlController,
+                    decoration: const InputDecoration(hintText: 'Image URL'),
+                    keyboardType: TextInputType.url,
+                  ),
+                ),
+                IconButton(onPressed: _addImageUrl, icon: const Icon(Icons.add_a_photo)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_imageUrls.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _imageUrls.map((url) {
+                  return Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[200],
+                          image: DecorationImage(
+                            image: NetworkImage(url),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _imageUrls.remove(url));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(Icons.close, size: 16, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 24),
             PrimaryButton(
               label: 'Submit for Approval',
