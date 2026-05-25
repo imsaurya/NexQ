@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userDoc().data.role == 'admin';
+    }
+
+    function isOwner(shopId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.keys().hasAll(['uid', 'email', 'role', 'displayName'])
+        && request.resource.data.role in ['customer', 'shop_owner'];
+      allow update: if isSignedIn()
+        && (request.auth.uid == userId || isAdmin())
+        && request.resource.data.uid == userId
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /shops/{shopId} {
+      allow read: if resource.data.approvalStatus == 'approved'
+        || (isSignedIn() && resource.data.ownerId == request.auth.uid)
+        || isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.approvalStatus == 'pending';
+      allow update: if isOwner(shopId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /queue_requests/{requestId} {
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid
+        || isOwner(resource.data.shopId)
+        || isAdmin()
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if isSignedIn() && (
+        isOwner(resource.data.shopId)
+        || (resource.data.customerId == request.auth.uid
+            && request.resource.data.status == 'cancelled')
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /active_tokens/{tokenId} {
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid
+        || isOwner(resource.data.shopId)
+        || isAdmin()
+      );
+      allow write: if isSignedIn() && (
+        isOwner(request.resource.data.shopId)
+        || isAdmin()
+      );
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

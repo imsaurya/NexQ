@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "250135126119",
+    "project_id": "nexq-fcebc",
+    "storage_bucket": "nexq-fcebc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:250135126119:android:883455d8c247fb079af4c2",
+        "android_client_info": {
+          "package_name": "com.nexq.nexq"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "250135126119-gctr2ikefdrv16ov2t70dcu2g3sk250d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexq.nexq",
+            "certificate_hash": "9d121b4b646e447c12319d00c964f3abc3db599e"
+          }
+        },
+        {
+          "client_id": "250135126119-5jhrlv1li4qmnothuuts9mjulhhel293.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlOK6s2-MGbtFH-Fh9QUEcBlOj-bzVe9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "250135126119-5jhrlv1li4qmnothuuts9mjulhhel293.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "250135126119-9m8f4tgjrq0mca35vjngil62jjc8r0j6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nexq.nexq"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
